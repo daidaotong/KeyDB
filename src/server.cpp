@@ -1831,7 +1831,7 @@ void databasesCron(bool fMainThread) {
                 serverAssert(serverTL->rehashCtl == nullptr);
                 /* Are we async rehashing? And if so is it time to re-calibrate? */
                 /* The recalibration limit is a prime number to ensure balancing across threads */
-                if (rehashes_per_ms > 0 && async_rehashes < 131) {
+                if (rehashes_per_ms > 0 && async_rehashes < 131 && cserver.active_defrag_enabled) {
                     serverTL->rehashCtl = dictRehashAsyncStart(g_pserver->db[rehash_db].pdict, rehashes_per_ms);
                     ++async_rehashes;
                 }
@@ -1853,7 +1853,9 @@ void databasesCron(bool fMainThread) {
                 if (rehashes_per_ms > 0) {
                     /* If the function did some work, stop here, we'll do
                     * more at the next cron loop. */
-                    serverLog(LL_VERBOSE, "Calibrated rehashes per ms: %d", rehashes_per_ms);
+                    if (!cserver.active_defrag_enabled) {
+                        serverLog(LL_VERBOSE, "Calibrated rehashes per ms: %d", rehashes_per_ms);
+                    }
                     break;
                 } else if (g_pserver->db[rehash_db].pdict->asyncdata == nullptr) {
                     /* If this db didn't need rehash and we have none in flight, we'll try the next one. */
